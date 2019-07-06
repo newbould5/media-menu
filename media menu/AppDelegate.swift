@@ -14,18 +14,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
     let image = NSImage(named:NSImage.Name("media-play-symbol"))
     var showingText = false
-    var text = ""
+    @objc dynamic var text = ""
     
-    let menu:NSMenu = NSMenu()
+    let menu:NSMenu = NSMenu() //TODO remove later
+    let popover = NSPopover()
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         if let button = statusItem.button {
             button.image = NSImage(named:NSImage.Name("media-play-symbol"))
             button.action = #selector(clicked(sender:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+//            button.action = #selector(togglePopover(_:))
         }
         
-        constructMenu()
+        constructMenu() //TODO remove
+        let storyboard = NSStoryboard(name: "Main", bundle: nil)
+        popover.contentViewController = storyboard.instantiateController(withIdentifier: "PlayerViewController") as? NSViewController
         
         var _ = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(AppDelegate.refresh), userInfo: nil, repeats: true)
 
@@ -33,6 +37,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
+    }
+    
+    func togglePopover(_ sender: Any?) -> () {
+        if popover.isShown {
+            closePopover(sender: sender)
+        } else {
+            showPopover(sender: sender)
+        }
+    }
+    
+    func showPopover(sender: Any?) {
+        if let button = statusItem.button {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+        }
+    }
+    
+    func closePopover(sender: Any?) {
+        popover.performClose(sender)
     }
     
     //TODO could show pop up with controls like skip play prev... and add hide button there
@@ -45,11 +67,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.menu = nil //need to set it back to nil otherwise new left click will open the menu
         }
         else{
+            togglePopover(sender)
+        }
+    }
+    
+    @objc func clickedBasic(sender: NSStatusBarButton!){
+        let event:NSEvent! = NSApp.currentEvent!
+        if (event.type == NSEvent.EventType.rightMouseUp) {
+            statusItem.menu = menu //set the menu
+            statusItem.popUpMenu(menu)// show the menu
+            statusItem.menu = nil //need to set it back to nil otherwise new left click will open the menu
+        }
+        else{
             switchText()
         }
     }
     
-    @objc func switchText() {
+    func switchText() {
         let button = statusItem.button
         if(showingText){
             button?.image = image
@@ -88,7 +122,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func constructMenu() {
+        menu.addItem(NSMenuItem(title: "Basic mode", action: #selector(switchMode(trigger:)), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    }
+    
+    @objc func switchMode(trigger: NSMenuItem){
+        if (trigger.state.rawValue == 0) {
+            switchToBasic(trigger: trigger)
+        }
+        else {
+            switchToAdvanced(trigger: trigger)
+        }
+    }
+    
+    func switchToBasic(trigger: NSMenuItem){
+        if let button = statusItem.button {
+            button.action = #selector(clickedBasic(sender:))
+        }
+        trigger.state = NSControl.StateValue(rawValue: 1)
+    }
+    
+    func switchToAdvanced(trigger: NSMenuItem){
+        if let button = statusItem.button {
+            button.action = #selector(clicked(sender:))
+        }
+        trigger.state = NSControl.StateValue(rawValue: 0)
+    }
+    
+    func execScript(source: String) {
+        var error: NSDictionary? = nil
+        if let scriptObject = NSAppleScript(source: source) {
+            scriptObject.executeAndReturnError(&error)
+        }
+        refresh()
+    }
+    
+    func prev (){
+        execScript(source: prevScript)
+    }
+    
+    func playpause(){
+        execScript(source: playpauseScript)
+    }
+    
+    func next(){
+        execScript(source: nextScript)
     }
     
     let currentTrackScript = """
@@ -131,7 +209,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
     """
     
-    let skipScript = """
+    let nextScript = """
     if application "Spotify" is running
         tell application "Spotify"
             next track
