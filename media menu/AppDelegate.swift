@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
     let image = NSImage(named:NSImage.Name("media-play-symbol"))
     var showingText = false
+    var mode = "advanced"
     @objc dynamic var text = ""
     
     let menu:NSMenu = NSMenu() //TODO remove later
@@ -30,6 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         constructMenu() //TODO remove
         let storyboard = NSStoryboard(name: "Main", bundle: nil)
         popover.contentViewController = storyboard.instantiateController(withIdentifier: "PlayerViewController") as? NSViewController
+        popover.behavior = NSPopover.Behavior.transient
         
         var _ = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(AppDelegate.refresh), userInfo: nil, repeats: true)
 
@@ -89,7 +91,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button?.image = image
             button?.title = ""
         } else {
-            reloadSong()
             button?.image = nil
             button?.title = text
         }
@@ -98,26 +99,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func reloadSong(){
         var error: NSDictionary? = nil
-        var title = ""
-        var artist = ""
+        var title = "Not playing"
         if let scriptObject = NSAppleScript(source: currentTrackScript) {
             if let outputString = scriptObject.executeAndReturnError(&error).stringValue {
                 title=outputString
             }
         }
         
-        if let scriptObject = NSAppleScript(source: currentArtistScript) {
-            if let outputString = scriptObject.executeAndReturnError(&error).stringValue {
-                artist=outputString
+        if (title == "Not playing" && showingText) {
+            // show icon
+            switchText()
+        } else if (title != "Not playing") {
+            text = title
+            if (!showingText) {
+                // show title, this will also trigger an update
+                switchText()
+            } else {
+                // update title
+                statusItem.button?.title = text
             }
         }
-        text = title == "Not playing" ? title : title + " - " + artist
     }
     
-    @objc func refresh(){
-        if(showingText){
+    @objc func refresh() {
+        if (mode == "basic") {
+            // basic mode will not constantly look for state change
+            if (showingText) {
+                reloadSong()
+            }
+        } else {
+            // advanced mode will automatically show title or hide title depending on whether a song is playing or not
             reloadSong()
-            statusItem.button?.title = text
         }
     }
     
@@ -140,6 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(clickedBasic(sender:))
         }
         trigger.state = NSControl.StateValue(rawValue: 1)
+        mode = "basic"
     }
     
     func switchToAdvanced(trigger: NSMenuItem){
@@ -147,6 +160,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(clicked(sender:))
         }
         trigger.state = NSControl.StateValue(rawValue: 0)
+        mode = "advanced"
     }
     
     func execScript(source: String) {
@@ -173,7 +187,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if application "Spotify" is running then
             tell application "Spotify"
                 if player state is playing then
-                    return name of current track
+                    return (name of current track) & " - " & (artist of current track)
                 else
                     return "Not playing"
                 end if
