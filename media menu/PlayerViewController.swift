@@ -12,17 +12,19 @@ class PlayerViewController: NSViewController {
     let delegate: AppDelegate = NSApplication.shared.delegate as! AppDelegate
 
     @IBOutlet var textLabel: NSTextField!
+    @IBOutlet var playButton: NSButton!
     
     override func viewWillAppear() {
         super.viewWillAppear()
         delegate.reloadSong()
+        view.window?.makeFirstResponder(playButton)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do view setup here.
         delegate.addObserver(self, forKeyPath: "text", options: [.new], context: nil)
-
+        
         textLabel.placeholderString = "Not playing"
     }
         
