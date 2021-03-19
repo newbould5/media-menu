@@ -7,35 +7,38 @@
 //
 
 import Cocoa
+import Combine
 
+@available(OSX 10.15, *)
 class PlayerViewController: NSViewController {
     let delegate: AppDelegate = NSApplication.shared.delegate as! AppDelegate
+    var cancellables = Set<AnyCancellable>()
 
     @IBOutlet var textLabel: NSTextField!
     @IBOutlet var playButton: NSButton!
     
     override func viewWillAppear() {
         super.viewWillAppear()
-        delegate.reloadSong()
         view.window?.makeFirstResponder(playButton)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do view setup here.
-        delegate.addObserver(self, forKeyPath: "text", options: [.new], context: nil)
+        
+        delegate.$text.sink() {
+            let text = $0
+            DispatchQueue.main.async {
+                self.textLabel.placeholderString = text
+            }
+        }.store(in: &cancellables)
         
         textLabel.placeholderString = "Not playing"
-    }
-        
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        textLabel.placeholderString = change![NSKeyValueChangeKey.newKey] as? String
     }
     
 }
 
+@available(OSX 10.15, *)
 extension PlayerViewController {
-    
     @IBAction func previous(_ sender: NSButton) {
         delegate.prev()
     }
@@ -47,14 +50,5 @@ extension PlayerViewController {
     @IBAction func playpause(_ sender: NSButton) {
         delegate.playpause()
         //change button?
-    }
-    
-    @IBAction func quit(_ sender: NSButton) {
-        NSApplication.shared.terminate(sender)
-    }
-    
-    @IBAction func hide(_ sender: NSButton) {
-        delegate.switchText()
-        sender.title = sender.title == "Hide" ? "Show" : "Hide"
     }
 }

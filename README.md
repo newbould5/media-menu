@@ -1,12 +1,15 @@
 # media-menu
-Mac menu bar application showing current spotify track.
+Mac menu bar application showing current spotify/sonos track.
 
 ## What does it do
-This app lives in the menu bar of your mac. There are two 'modes', basic and advanced.
+This app lives in the menu bar of your mac. It will show you which song is currently playing on
+spotify or your sonos speaker. A popup player for playback control can be used by clicking on the icon.
 
-### Advanced
-With the advanced mode you will be able to control spotify playback right from the menu bar. When you click on the media-menu icon a pop-up will show with all the controls.
-Advanced mode will now automatically show the current track in the menu bar if a song is playing and show the icon when pauzed or spotify is not running.
+### Spotify
+Spotify works out of the box. The only requirement is that the application is running.
 
-### Basic
-The basic mode will show you the current track right in your menu bar. Just click the icon and it will be displayed.
+### Sonos
+To enable sonos you first need to install [SoCo-cli](https://github.com/avantrec/soco-cli). After
+that go to preferences and type the name of your speaker. If you installed Soco-cli somewhere else
+you can also change the path to the binary. Once the setup is completed you can enable the sonos
+integration.

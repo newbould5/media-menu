@@ -7,38 +7,59 @@
 //
 
 import Cocoa
+import Combine
 
+@available(OSX 10.15, *)
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     let statusItem = NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
     let image = NSImage(named:NSImage.Name("media-play-symbol"))
     var showingText = false
-    var mode = "advanced"
-    @objc dynamic var text = ""
+    @Published var text = "Not playing" //this is needed for the popover unfortunately
     
-    let menu:NSMenu = NSMenu() //TODO remove later
+    let playerService = PlayerService()
+    
+    let menu:NSMenu = NSMenu()
     let popover = NSPopover()
+    var preferences = NSWindowController()
+    
+    var cancellables = Set<AnyCancellable>()
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        
+        // set some defaults if not set
+        if UserDefaults.standard.object(forKey: "speaker") == nil {
+            UserDefaults.standard.set("Office", forKey: "speaker")
+        }
+        if UserDefaults.standard.object(forKey: "sonosbin") == nil {
+            UserDefaults.standard.set("/usr/local/bin/sonos", forKey: "sonosbin")
+        }
+        
         if let button = statusItem.button {
             button.image = NSImage(named:NSImage.Name("media-play-symbol"))
             button.action = #selector(clicked(sender:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-//            button.action = #selector(togglePopover(_:))
         }
         
-        constructMenu() //TODO remove
+        constructMenu() //right click menu
+        
+        // popup
         let storyboard = NSStoryboard(name: "Main", bundle: nil)
         popover.contentViewController = storyboard.instantiateController(withIdentifier: "PlayerViewController") as? NSViewController
         popover.behavior = NSPopover.Behavior.transient
         
-        var _ = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(AppDelegate.refresh), userInfo: nil, repeats: true)
+        // preferences
+        let vc = storyboard.instantiateController(withIdentifier: "PreferencesViewController") as? NSViewController
+        let window = NSWindow(contentViewController: vc!)
+        let controller = NSWindowController(window: window)
+        preferences = controller
 
-    }
-
-    func applicationWillTerminate(_ aNotification: Notification) {
-        // Insert code here to tear down your application
+        //on state change update whats shown
+        playerService.$state.sink() {
+            self.text = $0
+            self.reloadSong()
+        }.store(in: &cancellables)
     }
     
     func togglePopover(_ sender: Any?) -> () {
@@ -59,8 +80,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.performClose(sender)
     }
     
-    //TODO could show pop up with controls like skip play prev... and add hide button there
-    //this way we dont need to fiddle with all of this and keep a more natural flow
     @objc func clicked(sender: NSStatusBarButton!){
         let event:NSEvent! = NSApp.currentEvent!
         if (event.type == NSEvent.EventType.rightMouseUp) {
@@ -73,173 +92,81 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    @objc func clickedBasic(sender: NSStatusBarButton!){
-        let event:NSEvent! = NSApp.currentEvent!
-        if (event.type == NSEvent.EventType.rightMouseUp) {
-            statusItem.menu = menu //set the menu
-            statusItem.popUpMenu(menu)// show the menu
-            statusItem.menu = nil //need to set it back to nil otherwise new left click will open the menu
-        }
-        else{
-            switchText()
-        }
-    }
-    
     func switchText() {
-        let button = statusItem.button
         if(showingText){
-            button?.image = image
-            button?.title = ""
+            hideText()
         } else {
-            button?.image = nil
-            button?.title = text
-        }
-        showingText = !showingText
-    }
-    
-    @objc func reloadSong(){
-        var error: NSDictionary? = nil
-        var title = "Not playing"
-        if let scriptObject = NSAppleScript(source: currentTrackScript) {
-            if let outputString = scriptObject.executeAndReturnError(&error).stringValue {
-                title=outputString
-            }
-        }
-        
-        if (title == "Not playing" && showingText) {
-            // show icon
-            switchText()
-        } else if (title != "Not playing") {
-            text = title
-            if (!showingText) {
-                // show title, this will also trigger an update
-                switchText()
-            } else {
-                // update title
-                statusItem.button?.title = text
-            }
+            showText()
         }
     }
     
-    @objc func refresh() {
-        if (mode == "basic") {
-            // basic mode will not constantly look for state change
-            if (showingText) {
-                reloadSong()
-            }
-        } else {
-            // advanced mode will automatically show title or hide title depending on whether a song is playing or not
-            reloadSong()
+    func hideText() {
+        DispatchQueue.main.async {
+            self.statusItem.button?.image = self.image
+            self.statusItem.button?.title = ""
+            self.showingText = false
+        }
+    }
+    
+    func showText(){
+        DispatchQueue.main.async {
+            self.statusItem.button?.image = nil
+            self.statusItem.button?.title = self.text
+            self.showingText = true
+        }
+    }
+    
+    func reloadSong () {
+        if text == "Not playing" && showingText {
+            hideText()
+        }
+        if text != "Not playing" {
+            showText()
         }
     }
     
     func constructMenu() {
-        menu.addItem(NSMenuItem(title: "Basic mode", action: #selector(switchMode(trigger:)), keyEquivalent: ""))
+        let menuItem = NSMenuItem(title: "Sonos", action: #selector(toggleSonos(trigger:)), keyEquivalent: "")
+        menu.addItem(menuItem)
+        menu.addItem(NSMenuItem(title: "Preferences...", action: #selector(openPreferences(trigger:)), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        
+        if (UserDefaults.standard.bool(forKey: "sonos")) {
+            menuItem.state = NSControl.StateValue(1)
+            playerService.enableSonos()
+        }
     }
     
-    @objc func switchMode(trigger: NSMenuItem){
+    @objc
+    func toggleSonos(trigger: NSMenuItem) {
         if (trigger.state.rawValue == 0) {
-            switchToBasic(trigger: trigger)
+            playerService.enableSonos()
+            trigger.state = NSControl.StateValue(1)
+            UserDefaults.standard.set(true, forKey: "sonos")
         }
         else {
-            switchToAdvanced(trigger: trigger)
+            playerService.disableSonos()
+            trigger.state = NSControl.StateValue(0)
+            UserDefaults.standard.set(false, forKey: "sonos")
         }
     }
     
-    func switchToBasic(trigger: NSMenuItem){
-        if let button = statusItem.button {
-            button.action = #selector(clickedBasic(sender:))
-        }
-        trigger.state = NSControl.StateValue(rawValue: 1)
-        mode = "basic"
+    @objc
+    func openPreferences(trigger: NSMenuItem) {
+        preferences.showWindow(trigger)
     }
-    
-    func switchToAdvanced(trigger: NSMenuItem){
-        if let button = statusItem.button {
-            button.action = #selector(clicked(sender:))
-        }
-        trigger.state = NSControl.StateValue(rawValue: 0)
-        mode = "advanced"
-    }
-    
-    func execScript(source: String) {
-        var error: NSDictionary? = nil
-        if let scriptObject = NSAppleScript(source: source) {
-            scriptObject.executeAndReturnError(&error)
-        }
-        refresh()
-    }
-    
+
     func prev (){
-        execScript(source: prevScript)
+        playerService.prev()
     }
     
     func playpause(){
-        execScript(source: playpauseScript)
+        playerService.playpause()
     }
     
     func next(){
-        execScript(source: nextScript)
+        playerService.next()
     }
-    
-    let currentTrackScript = """
-        if application "Spotify" is running then
-            tell application "Spotify"
-                if player state is playing then
-                    return (name of current track) & " - " & (artist of current track)
-                else
-                    return "Not playing"
-                end if
-            end tell
-        end if
-    """
-    
-    let currentArtistScript = """
-        if application "Spotify" is running then
-            tell application "Spotify"
-                if player state is playing then
-                    return artist of current track
-                else
-                    return ""
-                end if
-            end tell
-        end if
-    """
-    
-    let songURLScript = """
-    tell application "Spotify"
-        return spotify url of current track
-    end tell
-        
-    """
-    
-    let playpauseScript = """
-    if application "Spotify" is running
-        tell application "Spotify"
-            playpause
-        end tell
-    end if
-        
-    """
-    
-    let nextScript = """
-    if application "Spotify" is running
-        tell application "Spotify"
-            next track
-        end tell
-    end if
-        
-    """
-    
-    let prevScript = """
-    if application "Spotify" is running
-        tell application "Spotify"
-            previous track
-        end tell
-    end if
-        
-    """
 
 }
 

@@ -12,6 +12,11 @@
 		4C0DB35622CFAD22006133C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4C0DB35522CFAD22006133C7 /* Assets.xcassets */; };
 		4C0DB35922CFAD22006133C7 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4C0DB35722CFAD22006133C7 /* Main.storyboard */; };
 		4C0DB36222D0D681006133C7 /* PlayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C0DB36122D0D681006133C7 /* PlayerViewController.swift */; };
+		4C29AEF825FE583800512AC5 /* PreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29AEF725FE583800512AC5 /* PreferencesViewController.swift */; };
+		4C9DBD1A25C309CA00396BD2 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9DBD1925C309CA00396BD2 /* Player.swift */; };
+		4C9DBD1D25C30A8F00396BD2 /* SpotifyPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9DBD1C25C30A8F00396BD2 /* SpotifyPlayer.swift */; };
+		4C9DBD2025C3103E00396BD2 /* SonosPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9DBD1F25C3103E00396BD2 /* SonosPlayer.swift */; };
+		4C9DBD2325C3426200396BD2 /* PlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9DBD2225C3426200396BD2 /* PlayerService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +28,11 @@
 		4C0DB35A22CFAD22006133C7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4C0DB35B22CFAD22006133C7 /* media_menu.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = media_menu.entitlements; sourceTree = "<group>"; };
 		4C0DB36122D0D681006133C7 /* PlayerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewController.swift; sourceTree = "<group>"; };
+		4C29AEF725FE583800512AC5 /* PreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewController.swift; sourceTree = "<group>"; };
+		4C9DBD1925C309CA00396BD2 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		4C9DBD1C25C30A8F00396BD2 /* SpotifyPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyPlayer.swift; sourceTree = "<group>"; };
+		4C9DBD1F25C3103E00396BD2 /* SonosPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonosPlayer.swift; sourceTree = "<group>"; };
+		4C9DBD2225C3426200396BD2 /* PlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,7 +66,12 @@
 			isa = PBXGroup;
 			children = (
 				4C0DB35122CFAD20006133C7 /* AppDelegate.swift */,
+				4C9DBD2225C3426200396BD2 /* PlayerService.swift */,
+				4C9DBD1925C309CA00396BD2 /* Player.swift */,
+				4C9DBD1C25C30A8F00396BD2 /* SpotifyPlayer.swift */,
+				4C9DBD1F25C3103E00396BD2 /* SonosPlayer.swift */,
 				4C0DB36122D0D681006133C7 /* PlayerViewController.swift */,
+				4C29AEF725FE583800512AC5 /* PreferencesViewController.swift */,
 				4C0DB35322CFAD20006133C7 /* ViewController.swift */,
 				4C0DB35522CFAD22006133C7 /* Assets.xcassets */,
 				4C0DB35722CFAD22006133C7 /* Main.storyboard */,
@@ -136,7 +151,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C9DBD1A25C309CA00396BD2 /* Player.swift in Sources */,
+				4C9DBD2325C3426200396BD2 /* PlayerService.swift in Sources */,
+				4C9DBD2025C3103E00396BD2 /* SonosPlayer.swift in Sources */,
+				4C29AEF825FE583800512AC5 /* PreferencesViewController.swift in Sources */,
 				4C0DB35422CFAD20006133C7 /* ViewController.swift in Sources */,
+				4C9DBD1D25C30A8F00396BD2 /* SpotifyPlayer.swift in Sources */,
 				4C0DB35222CFAD20006133C7 /* AppDelegate.swift in Sources */,
 				4C0DB36222D0D681006133C7 /* PlayerViewController.swift in Sources */,
 			);
@@ -207,7 +227,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -262,7 +282,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
